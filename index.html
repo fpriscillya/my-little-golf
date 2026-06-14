@@ -7,13 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
 
-  <!-- Language toggle -->
+  <!-- Top bar -->
   <div class="lang-bar">
     <span class="brand-small">My Little Golf</span>
+    <nav class="top-nav">
+      <a href="index.html" class="nav-link active" data-en="Swing analyser" data-fr="Analyse du swing">Swing analyser</a>
+      <a href="green-card.html" class="nav-link" data-en="Green card" data-fr="Carte verte">Green card</a>
+    </nav>
     <div class="lang-switch">
       <button class="lang-btn active" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="fr">FR</button>
@@ -23,10 +27,10 @@
   <!-- Hero -->
   <header class="hero">
     <div class="hero-inner">
-      <p class="eyebrow" data-en="For women who swing" data-fr="Pour les femmes qui swinguent">For women who swing</p>
+      <p class="eyebrow" data-en="For beginners who swing" data-fr="Pour les debutantes qui swinguent">For beginners who swing</p>
       <h1 class="hero-title">
-        <span class="line1" data-en="Your swing." data-fr="Votre swing.">Your swing.</span>
-        <span class="line2 italic" data-en="Your story." data-fr="Votre histoire.">Your story.</span>
+        <span class="line1" data-en="Little by little." data-fr="Petit a petit.">Little by little.</span>
+        <span class="line2 italic" data-en="Swing by swing." data-fr="Swing apres swing.">Swing by swing.</span>
       </h1>
       <p class="hero-body" data-en="Nelly Korda, Lydia Ko, Jeeno. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time." data-fr="Nelly Korda, Lydia Ko, Jeeno. Chacune a commencé par un premier swing. Cette app est votre tremplin. Uploadez votre vidéo, visualisez votre mécanique, comprenez ce qui peut progresser. Une session à la fois.">
         Nelly Korda, Lydia Ko, Jeeno. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time.
@@ -34,46 +38,9 @@
       <a href="#guide" class="cta-btn" data-en="Start your analysis" data-fr="Commencer l'analyse">Start your analysis</a>
     </div>
 
-    <!-- Original CC0-inspired SVG illustration: female golfer at follow-through -->
+    <!-- Fox painting, original artwork by femmypriscillya.com -->
     <div class="hero-deco" aria-hidden="true">
-      <svg viewBox="0 0 160 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Head -->
-        <circle cx="80" cy="38" r="18" stroke="#B4B56D" stroke-width="2.5" fill="none"/>
-        <!-- Ponytail -->
-        <path d="M88 24 Q102 14 108 28 Q104 36 96 32" stroke="#B4B56D" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <!-- Neck -->
-        <line x1="80" y1="56" x2="80" y2="70" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Shoulders -->
-        <line x1="52" y1="80" x2="112" y2="76" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Spine -->
-        <line x1="80" y1="70" x2="76" y2="152" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Left arm: raised in follow-through -->
-        <line x1="52" y1="80" x2="32" y2="52" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="32" y1="52" x2="20" y2="34" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Right arm: across body -->
-        <line x1="112" y1="76" x2="136" y2="88" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="136" y1="88" x2="148" y2="74" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Club shaft extending up-left -->
-        <line x1="20" y1="34" x2="6" y2="10" stroke="#8DB2A2" stroke-width="1.8" stroke-linecap="round"/>
-        <!-- Club head -->
-        <rect x="2" y="6" width="8" height="6" rx="2" fill="#8DB2A2"/>
-        <!-- Hips -->
-        <line x1="64" y1="152" x2="96" y2="148" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Left leg: weight transferred, slight forward lean -->
-        <line x1="64" y1="152" x2="58" y2="230" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="58" y1="230" x2="52" y2="290" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Right leg: back toe -->
-        <line x1="96" y1="148" x2="102" y2="228" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="102" y1="228" x2="108" y2="288" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
-        <!-- Left foot flat -->
-        <line x1="52" y1="290" x2="36" y2="294" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
-        <!-- Right foot raised heel -->
-        <line x1="108" y1="288" x2="118" y2="280" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
-        <!-- Swing arc (coral dashed) -->
-        <path d="M148 74 Q 110 20 20 34" stroke="#E4704B" stroke-width="1.5" stroke-dasharray="5 5" fill="none"/>
-        <!-- Ground line -->
-        <line x1="20" y1="296" x2="140" y2="296" stroke="#B4B56D" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-      </svg>
+      <img src="assets/fox.jpg" alt="" class="hero-fox" />
     </div>
   </header>
 
@@ -216,15 +183,19 @@
       </div>
 
       <div class="model-row">
-        <label class="model-label" data-en="Tracking precision" data-fr="Précision du tracking">Tracking precision</label>
+        <label class="model-label" data-en="Tracking precision" data-fr="Précision du suivi">Tracking precision</label>
         <select id="modelSelect">
-          <option value="lite"  data-en="Fast (lite)"             data-fr="Rapide (lite)">Fast (lite)</option>
-          <option value="full"  selected data-en="Balanced (full)" data-fr="Equilibré (full)">Balanced (full)</option>
-          <option value="heavy" data-en="Maximum (heavy)"         data-fr="Maximum (heavy)">Maximum (heavy)</option>
+          <option value="lite"  data-en="Fast"     data-fr="Rapide">Fast</option>
+          <option value="full"  selected data-en="Balanced" data-fr="Equilibré">Balanced</option>
+          <option value="heavy" data-en="Maximum"  data-fr="Maximum">Maximum</option>
         </select>
-        <label class="fps-label" data-en="Video FPS" data-fr="FPS vidéo">Video FPS</label>
+        <label class="fps-label" data-en="Video frame rate" data-fr="Images par seconde">Video frame rate</label>
         <input type="number" id="fpsInput" value="30" min="1" max="240" />
       </div>
+
+      <p class="field-help" data-en="Tracking precision: how carefully the app follows your body. Balanced suits most phones. Choose Maximum if your wrists lose tracking at impact, it is slower but more accurate." data-fr="Précision du suivi : à quel point l'app suit votre corps. Equilibré convient à la plupart des téléphones. Choisissez Maximum si vos poignets perdent le suivi à l'impact, c'est plus lent mais plus précis.">Tracking precision: how carefully the app follows your body. Balanced suits most phones. Choose Maximum if your wrists lose tracking at impact, it is slower but more accurate.</p>
+
+      <p class="field-help" data-en="Frame rate: leave it at 30 for a normal video. If you filmed in slow-motion, set 120 or 240 to match your phone, so the frame stepping stays accurate." data-fr="Images par seconde : laissez 30 pour une vidéo normale. Si vous avez filmé en slow-motion, mettez 120 ou 240 selon votre téléphone, pour que l'avance image par image reste précise.">Frame rate: leave it at 30 for a normal video. If you filmed in slow-motion, set 120 or 240 to match your phone, so the frame stepping stays accurate.</p>
 
       <p id="status" class="status-msg"></p>
     </div>
@@ -321,6 +292,6 @@
     <p class="footer-privacy" data-en="Your videos are processed entirely on your device. Nothing is uploaded." data-fr="Vos vidéos sont traitées entièrement sur votre appareil. Rien n'est uploadé.">Your videos are processed entirely on your device. Nothing is uploaded.</p>
   </footer>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="assets/app.js"></script>
 </body>
 </html>
