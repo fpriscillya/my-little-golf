@@ -44,6 +44,12 @@ const T = {
   loaded:    { en: "Video loaded. Play or step through to analyse.", fr: "Video chargee. Lancez ou avancez image par image." },
   analysing: { en: "Analysing your swing...",      fr: "Analyse du swing en cours..." },
   noPhases:  { en: "Could not detect swing phases. Try a clearer video or play it through once first.", fr: "Phases non detectees. Essayez une video plus nette ou lisez-la entierement d'abord." },
+  portrait:  { en: "This looks like a portrait video. Landscape works best so your feet and club stay in frame, but you can continue.", fr: "Cette video semble en mode portrait. Le paysage est preferable pour garder vos pieds et le club dans le cadre, mais vous pouvez continuer." },
+  noPerson:  { en: "No clear person detected yet. Check that your whole body, head to feet, stays in the frame.", fr: "Aucune personne clairement detectee. Verifiez que tout votre corps, de la tete aux pieds, reste dans le cadre." },
+  multiPerson: { en: "More than one person detected in your video. Press Select player to choose who to analyse.", fr: "Plusieurs personnes detectees dans votre video. Appuyez sur Selectionner la joueuse pour choisir qui analyser." },
+  drawBox:   { en: "Draw a box around yourself: press and drag over the player you want to analyse. Draw it generously to allow for movement.", fr: "Dessinez un cadre autour de vous : appuyez et glissez sur la joueuse a analyser. Dessinez-le large pour laisser de la place au mouvement." },
+  boxSet:    { en: "Player selected. Now play or step through to analyse. Draw again to change.", fr: "Joueuse selectionnee. Lancez ou avancez pour analyser. Redessinez pour changer." },
+  needBox:   { en: "Draw a box around yourself first, on the video above.", fr: "Dessinez d'abord un cadre autour de vous, sur la video ci-dessus." },
   play:      { en: "Play",   fr: "Lire" },
   pause:     { en: "Pause",  fr: "Pause" },
   back:      { en: "Back",   fr: "Retour" },
@@ -153,7 +159,12 @@ async function loadModel(which) {
       delegate: "GPU",
     },
     runningMode: "VIDEO",
-    numPoses: 1,
+    numPoses: 3,
+    // Higher thresholds make the model more reluctant to report a pose,
+    // which rejects most non-human objects (e.g. a golf bag).
+    minPoseDetectionConfidence: 0.7,
+    minPosePresenceConfidence: 0.7,
+    minTrackingConfidence: 0.7,
   });
   lastModel = which;
   setStatus(tx("modelReady"));
@@ -186,9 +197,41 @@ const KEY_JOINTS = [
 let frameStore = [];
 let phases = {};
 
+// Player selection box, normalised coords {x, y, w, h} (0-1). Null until drawn.
+let playerBox = null;
+let boxDrawing = false;
+let boxStart = null;
+let selectMode = false; // true only while the user is choosing a player
+let multiPersonChecked = false; // whether we have already checked for multiple people
+
+/* Pick the pose whose hip midpoint falls inside the player box.
+   If no box yet, or none match, returns null. */
+function poseInBox(landmarksArray) {
+  if (!playerBox || !landmarksArray?.length) return null;
+  for (const pose of landmarksArray) {
+    const hipX = ((pose[23]?.x ?? 0) + (pose[24]?.x ?? 0)) / 2;
+    const hipY = ((pose[23]?.y ?? 0) + (pose[24]?.y ?? 0)) / 2;
+    if (
+      hipX >= playerBox.x && hipX <= playerBox.x + playerBox.w &&
+      hipY >= playerBox.y && hipY <= playerBox.y + playerBox.h
+    ) {
+      return pose;
+    }
+  }
+  return null;
+}
+
 function resetAnalysis() {
   frameStore = [];
   phases = {};
+  playerBox = null;
+  boxDrawing = false;
+  boxStart = null;
+  selectMode = false;
+  multiPersonChecked = false;
+  canvas.classList.remove("selecting");
+  const clr = document.getElementById("clearBoxBtn");
+  if (clr) clr.hidden = true;
   phaseMarkers.innerHTML = "";
   metricsGrid.innerHTML = "";
   coachingWrap.hidden = true;
@@ -196,8 +239,15 @@ function resetAnalysis() {
   phaseBadge.classList.remove("visible");
 }
 
-function storeFrame(lm, time) {
-  if (lm?.length > 0) frameStore.push({ time, lm: lm[0] });
+function storeFrame(pose, time) {
+  if (!pose) return;
+  // Require core body joints (shoulders + hips) to be visible enough.
+  // This filters out frames where the model fit a skeleton onto an object.
+  const coreVis = [11, 12, 23, 24]
+    .map(i => pose[i]?.visibility ?? 0)
+    .reduce((a, b) => a + b, 0) / 4;
+  if (coreVis < 0.6) return; // not a confident human pose, skip
+  frameStore.push({ time, lm: pose });
 }
 
 function detectPhases() {
@@ -377,97 +427,296 @@ function addMetric(name, value, note, cls) {
 }
 
 /* ============================================================
-   LLM COACHING
+   RULE-BASED COACHING ENGINE
+   No API key, no server. Works on GitHub Pages. Open source.
    ============================================================ */
-async function fetchCoaching(m, p) {
-  const prompt = lang === "fr" ? buildPromptFR(m, p) : buildPromptEN(m, p);
+
+const COACHING = {
+
+  /* ---- TEMPO ---- */
+  tempo: {
+    good: {
+      en: "Your rhythm is already in a good place. Your backswing gives the club time to load before the downswing fires.",
+      fr: "Votre rythme est deja bien etabli. Votre backswing laisse le temps au club de se charger avant que la descente parte.",
+    },
+    warn: {
+      en: "Your tempo is close but the downswing is a touch quick. You have the right instinct, just give the backswing one extra beat.",
+      fr: "Votre tempo est proche mais la descente est un peu rapide. Vous avez le bon instinct, donnez juste un temps de plus au backswing.",
+    },
+    bad: {
+      en: "Your downswing is rushing ahead of the backswing. This is the most common beginner pattern and it costs distance and direction.",
+      fr: "Votre descente part avant que le backswing soit fini. C'est le schema le plus courant chez les debutantes et il fait perdre en distance et en direction.",
+    },
+    drill: {
+      en: "Tempo drill: without a club, cross your arms over your chest and count out loud, 'one, two, three' on the backswing, then 'one' on the downswing. Repeat ten times until the rhythm feels natural, then pick up the club and keep that same count.",
+      fr: "Exercice de tempo : sans club, croisez les bras sur la poitrine et comptez a voix haute 'un, deux, trois' sur le backswing, puis 'un' sur la descente. Repetez dix fois jusqu'a ce que le rythme soit naturel, puis reprenez le club en gardant ce meme compte.",
+    },
+  },
+
+  /* ---- SPINE / POSTURE ---- */
+  spine: {
+    good: {
+      en: "Your posture stays solid from address to impact. That consistency is what lets everything else work.",
+      fr: "Votre posture reste solide de l'adresse a l'impact. Cette regularite est ce qui permet a tout le reste de fonctionner.",
+    },
+    warn: {
+      en: "There is a slight rise in your upper body through the shot. Most of the time you hold it well, but impact is where it slips.",
+      fr: "Il y a une legere montee du haut du corps pendant le coup. La plupart du temps vous la tenez bien, mais c'est a l'impact que ca glisse.",
+    },
+    bad: {
+      en: "Your upper body rises noticeably between address and impact. This is called early extension and it is the main reason shots feel inconsistent.",
+      fr: "Votre haut du corps monte sensiblement entre l'adresse et l'impact. C'est ce qu'on appelle l'extension precoce et c'est la principale raison pour laquelle les coups semblent irreguliers.",
+    },
+    drill: {
+      en: "Posture drill: take your address position facing a wall, close enough that your backside just touches it. Make slow practice swings keeping your backside on the wall throughout. If it lifts off, you are rising. Do this fifteen times before every session.",
+      fr: "Exercice de posture : prenez votre position d'adresse face a un mur, assez pres pour que vos fesses le touchent a peine. Faites des swings lents en gardant les fesses contre le mur du debut a la fin. Si elles s'en ecartent, vous montez. Faites cela quinze fois avant chaque seance.",
+    },
+  },
+
+  /* ---- HEAD STABILITY ---- */
+  head: {
+    good: {
+      en: "Your head stays calm through the swing. That steady centre is what lets the club find the ball consistently.",
+      fr: "Votre tete reste calme pendant le swing. Ce centre stable est ce qui permet au club de trouver la balle regulierement.",
+    },
+    warn: {
+      en: "Your head moves a little through the swing. A small amount is normal but keeping it quieter will sharpen your contact.",
+      fr: "Votre tete bouge un peu pendant le swing. Une petite quantite est normale mais la garder plus calme ameliorera la qualite de votre contact.",
+    },
+    bad: {
+      en: "Your head is moving quite a bit from address to impact. When the head sways, the whole swing has to compensate at the last moment to find the ball.",
+      fr: "Votre tete bouge beaucoup de l'adresse a l'impact. Quand la tete se balance, tout le swing doit compenser au dernier moment pour trouver la balle.",
+    },
+    drill: {
+      en: "Head drill: ask a friend to hold a finger lightly on top of your cap at address. Make practice swings trying not to push the finger up or sideways. No friend available: stand next to a wall so your hair just grazes it, and swing without letting your head press into the wall. Ten swings.",
+      fr: "Exercice de tete : demandez a une amie de poser un doigt legèrement sur votre casquette a l'adresse. Faites des swings en essayant de ne pas pousser le doigt vers le haut ou sur le cote. Pas d'amie disponible : tenez-vous pres d'un mur pour que vos cheveux l'effleurent, et swinguez sans laisser votre tete appuyer contre le mur. Dix swings.",
+    },
+  },
+
+  /* ---- SHOULDER TURN ---- */
+  shoulder: {
+    good: {
+      en: "Your shoulder turn at the top is full and committed. That coil is where your distance comes from.",
+      fr: "Votre rotation des epaules au sommet est complete et engagee. C'est cet armement qui est la source de votre distance.",
+    },
+    warn: {
+      en: "Your shoulder turn is moderate. You are rotating but there is more available, and more turn means more power without swinging harder.",
+      fr: "Votre rotation des epaules est moderee. Vous tournez mais il y a plus a chercher, et plus de rotation signifie plus de puissance sans swinguer plus fort.",
+    },
+    bad: {
+      en: "Your shoulders are not turning very far back. The swing is mostly arms and hands right now, which is why it can feel like a lot of effort for not much result.",
+      fr: "Vos epaules ne tournent pas très loin en arriere. Le swing est surtout bras et mains pour l'instant, ce qui explique que ca peut sembler beaucoup d'effort pour peu de resultat.",
+    },
+    drill: {
+      en: "Turn drill: hold a club across your shoulders behind your neck with both hands. From your address posture, rotate until the right end of the club points at the ball. Hold for two seconds. That is how far your shoulders should go. Repeat twenty times daily.",
+      fr: "Exercice de rotation : tenez un club sur vos epaules derriere la nuque avec les deux mains. A partir de votre posture d'adresse, tournez jusqu'a ce que l'extremite droite du club pointe vers la balle. Tenez deux secondes. C'est la distance que vos epaules devraient parcourir. Repetez vingt fois par jour.",
+    },
+  },
+
+  /* ---- WEIGHT SHIFT ---- */
+  weight: {
+    good: {
+      en: "Your weight moves into the shot well. That transfer is what separates a push from a real strike.",
+      fr: "Votre poids se transfere bien dans le coup. Ce transfert est ce qui distingue une poussee d'un vrai impact.",
+    },
+    warn: {
+      en: "There is some weight shift but it is not quite completing into your front side through impact.",
+      fr: "Il y a un debut de transfert de poids mais il ne se complete pas tout a fait vers le cote avant a l'impact.",
+    },
+    bad: {
+      en: "Your weight is staying too static through the swing. Without that shift forward, you end up hitting at the ball rather than through it.",
+      fr: "Votre poids reste trop statique pendant le swing. Sans ce deplacement vers l'avant, vous finissez par frapper sur la balle plutot qu'a travers elle.",
+    },
+    drill: {
+      en: "Weight shift drill: stand with a ball or rolled towel under your back heel at address. Make practice swings. The pressure of the ball under your heel will remind you to shift forward. Your back heel should naturally rise as you swing through. Ten swings.",
+      fr: "Exercice de transfert : placez une balle ou une serviette roulee sous votre talon arriere a l'adresse. Faites des swings. La pression de la balle sous votre talon vous rappellera de vous deplacer vers l'avant. Votre talon arriere devrait naturellement se lever en swinguant. Dix swings.",
+    },
+  },
+
+  /* ---- HIP SHOULDER SEPARATION ---- */
+  separation: {
+    good: {
+      en: "The gap between your hips and shoulders at the top is there. That coil stores the energy that drives the ball.",
+      fr: "L'ecart entre vos hanches et vos epaules au sommet est present. Cet armement stocke l'energie qui propulse la balle.",
+    },
+    warn: {
+      en: "Your hips and shoulders are turning together a little. More separation between them at the top means more stored energy on the way down.",
+      fr: "Vos hanches et vos epaules tournent un peu ensemble. Plus de separation entre elles au sommet signifie plus d'energie stockee dans la descente.",
+    },
+    bad: {
+      en: "Your hips and shoulders are turning as one unit. When they move together there is no coil, and power comes from coil, not from swinging harder.",
+      fr: "Vos hanches et vos epaules tournent comme une seule unite. Quand elles bougent ensemble il n'y a pas d'armement, et la puissance vient de l'armement, pas de swinguer plus fort.",
+    },
+    drill: {
+      en: "Separation drill: cross your arms over your chest. From address, try to turn your shoulders as far as possible while resisting with your hips, keeping them as quiet as you can. You will feel a stretch across your lower back. That is the coil. Hold three seconds, release. Repeat fifteen times.",
+      fr: "Exercice de separation : croisez les bras sur la poitrine. A partir de l'adresse, essayez de tourner vos epaules le plus loin possible en resisant avec vos hanches, en les gardant aussi immobiles que possible. Vous sentirez un etirement dans le bas du dos. C'est l'armement. Tenez trois secondes, relâchez. Repetez quinze fois.",
+    },
+  },
+
+  /* ---- FOLLOW THROUGH ---- */
+  followThrough: {
+    good: {
+      en: "Your finish is full and committed. You are swinging through the ball, not at it.",
+      fr: "Votre finish est complet et engage. Vous swinguez a travers la balle, pas sur la balle.",
+    },
+    warn: {
+      en: "Your finish is partial. The swing is decelerating a little before it completes, which costs you both distance and direction.",
+      fr: "Votre finish est partiel. Le swing decelere un peu avant de se completer, ce qui vous coute en distance et en direction.",
+    },
+    bad: {
+      en: "Your swing is stopping around impact. This usually means you are focused on hitting the ball rather than swinging through it. The ball just happens to be in the way of the swing.",
+      fr: "Votre swing s'arrete autour de l'impact. Cela signifie generalement que vous vous concentrez sur le fait de frapper la balle plutot que de swinguer a travers elle. La balle se trouve juste sur le chemin du swing.",
+    },
+    drill: {
+      en: "Finish drill: make practice swings with the sole goal of holding a full balanced finish for three seconds, weight on your front foot, belt buckle facing the target, back heel up. Do not worry about anything else. Ten swings, all held at the finish.",
+      fr: "Exercice de finish : faites des swings avec pour seul objectif de tenir un finish complet et equilibre pendant trois secondes, poids sur le pied avant, boucle de ceinture face a la cible, talon arriere leve. Ne vous preoccupez de rien d'autre. Dix swings, tous tenus au finish.",
+    },
+  },
+
+  /* ---- ENCOURAGEMENT tied to best metric ---- */
+  encouragement: {
+    tempo_good: {
+      en: "Your rhythm is genuinely one of the hardest things to teach and you already have it. Build everything else on that foundation.",
+      fr: "Votre rythme est vraiment l'une des choses les plus difficiles a enseigner et vous l'avez deja. Construisez tout le reste sur cette base.",
+    },
+    spine_good: {
+      en: "Maintaining your posture through the shot is something many golfers struggle with for years. You are already doing it.",
+      fr: "Maintenir votre posture pendant le coup est quelque chose avec lequel beaucoup de golfeuses luttent pendant des annees. Vous le faites deja.",
+    },
+    head_good: {
+      en: "A steady head through the swing is a quiet superpower. It means your contact will stay consistent even as other things improve.",
+      fr: "Une tete stable pendant le swing est un super-pouvoir discret. Cela signifie que votre contact restera regulier meme quand d'autres elements s'ameliorent.",
+    },
+    shoulder_good: {
+      en: "That shoulder turn is a real asset. Most beginners shorten the backswing out of instinct and lose all the power. You are not doing that.",
+      fr: "Cette rotation des epaules est un vrai atout. La plupart des debutantes raccourcissent le backswing par instinct et perdent toute la puissance. Vous, non.",
+    },
+    weight_good: {
+      en: "Transferring your weight through the shot is something that takes many beginners months to feel. You are already moving in the right direction.",
+      fr: "Transferer son poids a travers le coup est quelque chose qui prend des mois a beaucoup de debutantes. Vous vous deplacez deja dans la bonne direction.",
+    },
+    finish_good: {
+      en: "That full finish tells me you are committing to the swing, not just poking at the ball. That trust is everything in golf.",
+      fr: "Ce finish complet me dit que vous vous engagez dans le swing, que vous ne vous contentez pas de piquer la balle. Cette confiance est tout en golf.",
+    },
+    default: {
+      en: "Every swing gives you more data than the last one. Keep filming, keep comparing, and the improvements will compound.",
+      fr: "Chaque swing vous donne plus de donnees que le precedent. Continuez a filmer, a comparer, et les progres s'accumuleront.",
+    },
+  },
+};
+
+/* Pick the weakest metric to give one priority drill */
+function weakestMetric(m) {
+  const scores = [
+    { key: "tempo",     score: m.tempo ?? 99,           bad: v => v < 1.8  },
+    { key: "spine",     score: m.spineLoss ?? 0,         bad: v => v > 3.5  },
+    { key: "head",      score: m.headMove ?? 0,          bad: v => v > 8    },
+    { key: "shoulder",  score: m.shoulderTurn ?? 99,     bad: v => v < 8    },
+    { key: "weight",    score: m.weightShift ?? 99,      bad: v => v < 1.5  },
+    { key: "separation",score: m.hipShoulderSep ?? 99,   bad: v => v < 18   },
+    { key: "followThrough", score: m.followThrough ?? 99, bad: v => v < 35  },
+  ];
+  // Return first one that is in "bad" range, otherwise first in "warn" range.
+  const bad = scores.find(s => s.bad(s.score));
+  if (bad) return bad.key;
+  const warns = {
+    tempo:        m.tempo != null && m.tempo < 2.5,
+    spine:        m.spineLoss > 1.5,
+    head:         m.headMove != null && m.headMove > 4,
+    shoulder:     m.shoulderTurn < 18,
+    weight:       m.weightShift < 4,
+    separation:   m.hipShoulderSep < 30,
+    followThrough:m.followThrough < 55,
+  };
+  return Object.keys(warns).find(k => warns[k]) ?? "tempo";
+}
+
+/* Pick the strongest metric for the encouragement line */
+function bestMetric(m) {
+  if (m.tempo != null && m.tempo >= 2.5)         return "tempo_good";
+  if (m.spineLoss < 1.5)                          return "spine_good";
+  if (m.headMove != null && m.headMove < 4)       return "head_good";
+  if (m.shoulderTurn > 18)                        return "shoulder_good";
+  if (m.weightShift > 4)                          return "weight_good";
+  if (m.followThrough > 55)                       return "finish_good";
+  return "default";
+}
+
+/* Classify a metric into good / warn / bad */
+function classify(key, m) {
+  const v = {
+    tempo:        m.tempo,
+    spine:        m.spineLoss,
+    head:         m.headMove,
+    shoulder:     m.shoulderTurn,
+    weight:       m.weightShift,
+    separation:   m.hipShoulderSep,
+    followThrough:m.followThrough,
+  }[key];
+  const good = {
+    tempo:        v => v >= 2.5,
+    spine:        v => v < 1.5,
+    head:         v => v < 4,
+    shoulder:     v => v > 18,
+    weight:       v => v > 4,
+    separation:   v => v > 30,
+    followThrough:v => v > 55,
+  }[key];
+  const bad = {
+    tempo:        v => v < 1.8,
+    spine:        v => v > 3.5,
+    head:         v => v > 8,
+    shoulder:     v => v < 8,
+    weight:       v => v < 1.5,
+    separation:   v => v < 18,
+    followThrough:v => v < 35,
+  }[key];
+  if (v == null) return "warn";
+  if (good(v)) return "good";
+  if (bad(v))  return "bad";
+  return "warn";
+}
+
+function generateCoaching(m) {
+  const L = lang;
+  const worst = weakestMetric(m);
+  const best  = bestMetric(m);
+
+  const tempoClass = classify("tempo", m);
+  const spineClass = classify("spine", m);
+  const headClass  = classify("head",  m);
+  const shoulderClass  = classify("shoulder",    m);
+  const weightClass    = classify("weight",      m);
+  const followClass    = classify("followThrough", m);
+
+  const section1Label = L === "fr" ? "Position et tempo" : "Setup and tempo";
+  const section2Label = L === "fr" ? "Rotation et puissance" : "Turn and power";
+  const section3Label = L === "fr" ? "A travers la balle" : "Through the ball";
+
+  const s1 = [
+    COACHING.tempo[tempoClass][L],
+    COACHING.spine[spineClass][L],
+    ...(m.headMove != null ? [COACHING.head[headClass][L]] : []),
+  ].join(" ");
+
+  const s2 = [
+    COACHING.shoulder[shoulderClass][L],
+    COACHING.weight[weightClass][L],
+  ].join(" ");
+
+  const s3 = [
+    COACHING.followThrough[followClass][L],
+    COACHING[worst]?.drill?.[L] ?? COACHING.tempo.drill[L],
+    COACHING.encouragement[best][L],
+  ].join(" ");
+
+  return `<strong>${section1Label}</strong>${s1}\n\n<strong>${section2Label}</strong>${s2}\n\n<strong>${section3Label}</strong>${s3}`;
+}
+
+function fetchCoaching(m) {
   coachingWrap.hidden = false;
-  coachingBody.textContent = "...";
-
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      system: lang === "fr"
-        ? "Tu es un coach de golf specialise dans l'enseignement aux debutantes adultes. Tu donnes des retours clairs, encourageants et actionnables. Tu bases tes conseils uniquement sur les metriques fournies, sans inventer de donnees. Tu reponds toujours en francais."
-        : "You are a golf coach specialising in teaching adult female beginners. You give clear, encouraging, and actionable feedback. You base your advice strictly on the provided metrics, never inventing data. You always respond in English.",
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  const data = await res.json();
-  const text = data.content?.find(b => b.type === "text")?.text ?? "";
-  coachingBody.textContent = text;
-}
-
-function buildPromptEN(m, p) {
-  return `Here are the swing metrics for a female beginner golfer, all measured from body tracking on a face-on video. Note: this angle cannot see the clubface or wrist angle, so do not comment on those.
-
-TEMPO
-Tempo ratio (backswing : downswing): ${m.tempo?.toFixed(2) ?? "N/A"} : 1
-(Tour average for women is around 3:1. Below 2:1 means rushing the downswing.)
-Backswing duration: ${p.backswing?.toFixed(2) ?? "N/A"}s. Downswing duration: ${p.downswing?.toFixed(2) ?? "N/A"}s.
-
-POSTURE AND CENTRE
-Spine angle loss, address to impact: ${m.spineLoss?.toFixed(1) ?? "N/A"}% (below 1.5% good, above 3.5% is early extension).
-Head stability, total head travel address to impact: ${m.headMove?.toFixed(1) ?? "N/A"}% (below 4% steady, above 8% is swaying).
-
-ROTATION AND POWER
-Shoulder turn from address to top: ${m.shoulderTurn?.toFixed(0) ?? "N/A"} degrees (above 18 is a full turn).
-Hip-shoulder separation at top: ${m.hipShoulderSep?.toFixed(0) ?? "N/A"} degrees (above 30 good coil, below 18 they turn together).
-Weight shift toward target, address to impact: ${m.weightShift?.toFixed(1) ?? "N/A"}% (above 4% athletic, below 1.5% too static).
-
-FINISH
-Follow-through completion: ${m.followThrough?.toFixed(0) ?? "N/A"}% (above 55% full finish, below 35% means quitting at the ball).
-
-Write a warm, encouraging coaching note of about 6 to 8 sentences, in a friendly tone, as if speaking to a beginner you want to keep motivated. Structure it in three short parts using these exact labels on their own line:
-
-Setup and tempo:
-Then one or two sentences on what the tempo, posture and head numbers show.
-
-Turn and power:
-Then one or two sentences on the rotation, separation and weight shift numbers.
-
-Through the ball:
-Then one sentence on the finish, then name the single most important thing to work on first with one simple concrete drill she can do today, and end with one genuine encouraging line tied to her actual numbers.
-
-Comment only on metrics provided. Do not invent clubface, grip, or ball-flight detail. Do not mention professional players. Do not use em dashes.`;
-}
-
-function buildPromptFR(m, p) {
-  return `Voici les metriques de swing d'une golfeuse debutante, mesurees a partir du suivi du corps sur une video de face. Note : cet angle ne permet pas de voir la face du club ni l'angle du poignet, donc ne commente pas ces elements.
-
-TEMPO
-Ratio de tempo (backswing : descente) : ${m.tempo?.toFixed(2) ?? "N/A"} : 1
-(Moyenne du tour feminin environ 3:1. En dessous de 2:1, la descente est precipitee.)
-Duree backswing : ${p.backswing?.toFixed(2) ?? "N/A"}s. Duree descente : ${p.downswing?.toFixed(2) ?? "N/A"}s.
-
-POSTURE ET CENTRE
-Perte d'angle de colonne, adresse a impact : ${m.spineLoss?.toFixed(1) ?? "N/A"}% (en dessous de 1,5% bien, au-dessus de 3,5% extension precoce).
-Stabilite de tete, deplacement total adresse a impact : ${m.headMove?.toFixed(1) ?? "N/A"}% (en dessous de 4% stable, au-dessus de 8% balancement).
-
-ROTATION ET PUISSANCE
-Rotation des epaules, adresse au sommet : ${m.shoulderTurn?.toFixed(0) ?? "N/A"} degres (au-dessus de 18 rotation complete).
-Separation hanches-epaules au sommet : ${m.hipShoulderSep?.toFixed(0) ?? "N/A"} degres (au-dessus de 30 bon armement, en dessous de 18 elles tournent ensemble).
-Transfert de poids vers la cible, adresse a impact : ${m.weightShift?.toFixed(1) ?? "N/A"}% (au-dessus de 4% athletique, en dessous de 1,5% trop statique).
-
-FINISH
-Completion du finish : ${m.followThrough?.toFixed(0) ?? "N/A"}% (au-dessus de 55% finish complet, en dessous de 35% elle s'arrete a la balle).
-
-Redige une note de coaching chaleureuse et encourageante d'environ 6 a 8 phrases, sur un ton amical, comme si tu parlais a une debutante que tu veux garder motivee. Structure en trois courtes parties avec ces libelles exacts, chacun sur sa propre ligne :
-
-Position et tempo :
-Puis une ou deux phrases sur ce que montrent le tempo, la posture et la tete.
-
-Rotation et puissance :
-Puis une ou deux phrases sur la rotation, la separation et le transfert de poids.
-
-A travers la balle :
-Puis une phrase sur le finish, puis nomme la chose la plus importante a travailler en premier avec un exercice simple et concret a faire aujourd'hui, et termine par une vraie phrase d'encouragement liee a ses chiffres reels.
-
-Commente uniquement les metriques fournies. N'invente aucun detail de face de club, de prise ou de trajectoire. Ne mentionne pas de joueuses professionnelles. N'utilise pas de tirets cadratins.`;
+  coachingBody.innerHTML = generateCoaching(m);
 }
 
 /* ============================================================
@@ -476,6 +725,14 @@ Commente uniquement les metriques fournies. N'invente aucun detail de face de cl
 analyseBtn.addEventListener("click", async () => {
   analyseBtn.disabled = true;
   setStatus(tx("analysing"));
+
+  // If almost no confident human frames were captured, it was likely
+  // an object (e.g. a golf bag) or the body was out of frame.
+  if (frameStore.length < 10) {
+    setStatus(tx("noPerson"));
+    analyseBtn.disabled = false;
+    return;
+  }
 
   const detected = detectPhases();
   if (!detected) {
@@ -488,11 +745,7 @@ analyseBtn.addEventListener("click", async () => {
   const m = calcMetrics();
   if (m) {
     renderMetrics(m);
-    const p = {
-      backswing: phases.top    - phases.address,
-      downswing: phases.impact - phases.top,
-    };
-    await fetchCoaching(m, p);
+    fetchCoaching(m);
   }
 
   setStatus("");
@@ -548,9 +801,97 @@ video.addEventListener("loadedmetadata", () => {
   canvas.height = video.videoHeight;
   stage.hidden  = false;
   stage.scrollIntoView({ behavior: "smooth", block: "start" });
-  setStatus(tx("loaded"));
+
+  // Portrait nudge. The player box is optional, mentioned gently.
+  if (video.videoHeight > video.videoWidth) {
+    setStatus(tx("portrait") + " " + tx("loaded"));
+  } else {
+    setStatus(tx("loaded"));
+  }
   detectCurrentFrame();
 });
+
+/* ============================================================
+   PLAYER BOX DRAWING (mouse + touch)
+   ============================================================ */
+function canvasPoint(e) {
+  const rect = canvas.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - rect.left) / rect.width,
+    y: (src.clientY - rect.top) / rect.height,
+  };
+}
+
+function startBox(e) {
+  if (!selectMode) return; // only draw when in select mode
+  e.preventDefault();
+  boxDrawing = true;
+  boxStart = canvasPoint(e);
+  playerBox = null;
+}
+
+function moveBox(e) {
+  if (!boxDrawing) return;
+  e.preventDefault();
+  const p = canvasPoint(e);
+  playerBox = {
+    x: Math.min(boxStart.x, p.x),
+    y: Math.min(boxStart.y, p.y),
+    w: Math.abs(p.x - boxStart.x),
+    h: Math.abs(p.y - boxStart.y),
+  };
+  detectCurrentFrame();
+}
+
+function endBox(e) {
+  if (!boxDrawing) return;
+  e.preventDefault();
+  boxDrawing = false;
+  // Ignore tiny accidental boxes.
+  if (!playerBox || playerBox.w < 0.05 || playerBox.h < 0.05) {
+    playerBox = null;
+    setStatus(tx("drawBox"));
+    return;
+  }
+  selectMode = false;
+  canvas.classList.remove("selecting");
+  if (clearBoxBtn) clearBoxBtn.hidden = false;
+  setStatus(tx("boxSet"));
+  detectCurrentFrame();
+}
+
+canvas.addEventListener("mousedown", startBox);
+canvas.addEventListener("mousemove", moveBox);
+canvas.addEventListener("mouseup",   endBox);
+canvas.addEventListener("touchstart", startBox, { passive: false });
+canvas.addEventListener("touchmove",  moveBox,  { passive: false });
+canvas.addEventListener("touchend",   endBox,   { passive: false });
+
+// Select player / clear buttons
+const selectPlayerBtn = document.getElementById("selectPlayerBtn");
+const clearBoxBtn     = document.getElementById("clearBoxBtn");
+
+if (selectPlayerBtn) {
+  selectPlayerBtn.addEventListener("click", () => {
+    video.pause();
+    playBtn.textContent = tx("play");
+    selectMode = true;
+    canvas.classList.add("selecting");
+    setStatus(tx("drawBox"));
+  });
+}
+
+if (clearBoxBtn) {
+  clearBoxBtn.addEventListener("click", () => {
+    playerBox = null;
+    selectMode = false;
+    canvas.classList.remove("selecting");
+    clearBoxBtn.hidden = true;
+    setStatus(tx("loaded"));
+    detectCurrentFrame();
+  });
+}
 
 /* ============================================================
    DETECTION + DRAWING
@@ -558,40 +899,76 @@ video.addEventListener("loadedmetadata", () => {
 function detectCurrentFrame() {
   if (!poseLandmarker || video.readyState < 2) return;
   const result = poseLandmarker.detectForVideo(video, performance.now());
-  drawFrame(result);
-  updateQuality(result);
+
+  // One-time check: if multiple people detected, nudge the user to select.
+  if (!multiPersonChecked && result.landmarks?.length > 1 && !playerBox) {
+    multiPersonChecked = true;
+    setStatus(tx("multiPerson"));
+  } else if (!multiPersonChecked && result.landmarks?.length <= 1) {
+    multiPersonChecked = true; // single person, no nudge needed
+  }
+
+  // Choose the pose inside the player box. Before a box is drawn,
+  // fall back to the first detected pose so the preview still shows.
+  const chosen = playerBox
+    ? poseInBox(result.landmarks)
+    : (result.landmarks?.[0] ?? null);
+
+  drawFrame(result, chosen);
+  updateQuality(chosen);
   updatePhaseLabel();
-  storeFrame(result.landmarks, video.currentTime);
+  if (chosen) storeFrame(chosen, video.currentTime);
 }
 
-function drawFrame(result) {
+function drawFrame(result, chosen) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!result.landmarks?.length) return;
-  const lm = result.landmarks[0];
 
-  drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, {
-    color: "#DEE2B0", lineWidth: 2.5,
-  });
-  drawingUtils.drawLandmarks(lm, { radius: 4, color: "#8DB2A2" });
+  // Draw the player box if one exists.
+  if (playerBox) {
+    ctx.strokeStyle = "#E4704B";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 6]);
+    ctx.strokeRect(
+      playerBox.x * canvas.width,
+      playerBox.y * canvas.height,
+      playerBox.w * canvas.width,
+      playerBox.h * canvas.height
+    );
+    ctx.setLineDash([]);
+  }
 
-  [15, 16].forEach(i => {
-    const p = lm[i];
-    if (!p) return;
-    ctx.beginPath();
-    ctx.arc(p.x * canvas.width, p.y * canvas.height, 9, 0, Math.PI * 2);
-    ctx.fillStyle = "#E4704B";
-    ctx.fill();
-  });
+  // Dim the non-selected people lightly so the chosen one stands out.
+  if (result.landmarks?.length) {
+    result.landmarks.forEach(lm => {
+      if (lm === chosen) return;
+      drawingUtils.drawLandmarks(lm, { radius: 2, color: "rgba(180,181,109,0.35)" });
+    });
+  }
+
+  // Draw the chosen player's skeleton in full colour.
+  if (chosen) {
+    drawingUtils.drawConnectors(chosen, PoseLandmarker.POSE_CONNECTIONS, {
+      color: "#DEE2B0", lineWidth: 2.5,
+    });
+    drawingUtils.drawLandmarks(chosen, { radius: 4, color: "#8DB2A2" });
+    [15, 16].forEach(i => {
+      const p = chosen[i];
+      if (!p) return;
+      ctx.beginPath();
+      ctx.arc(p.x * canvas.width, p.y * canvas.height, 9, 0, Math.PI * 2);
+      ctx.fillStyle = "#E4704B";
+      ctx.fill();
+    });
+  }
 }
 
-function updateQuality(result) {
+function updateQuality(chosen) {
   jointReadout.innerHTML = "";
-  if (!result.landmarks?.length) { setDot("#ccc", "--"); return; }
-  const lm = result.landmarks[0];
+  if (!chosen) { setDot("#ccc", "--"); return; }
   let minCritical = 1;
 
   KEY_JOINTS.forEach(j => {
-    const v = lm[j.idx]?.visibility ?? 0;
+    const v = chosen[j.idx]?.visibility ?? 0;
     if (j.critical) minCritical = Math.min(minCritical, v);
     const li = document.createElement("li");
     li.innerHTML = `<span>${j.name}</span><span class="jval" style="color:${colorFor(v)}">${(v*100).toFixed(0)}%</span>`;

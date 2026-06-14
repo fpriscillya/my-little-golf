@@ -32,8 +32,8 @@
         <span class="line1" data-en="Little by little." data-fr="Petit a petit.">Little by little.</span>
         <span class="line2 italic" data-en="Swing by swing." data-fr="Swing apres swing.">Swing by swing.</span>
       </h1>
-      <p class="hero-body" data-en="Nelly Korda, Lydia Ko, Jeeno. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time." data-fr="Nelly Korda, Lydia Ko, Jeeno. Chacune a commencé par un premier swing. Cette app est votre tremplin. Uploadez votre vidéo, visualisez votre mécanique, comprenez ce qui peut progresser. Une session à la fois.">
-        Nelly Korda, Lydia Ko, Jeeno. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time.
+      <p class="hero-body" data-en="Nelly Korda, Lydia Ko, Jeeno Thitikul. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time." data-fr="Nelly Korda, Lydia Ko, Jeeno Thitikul. Chacune a commencé par un premier swing. Cette app est votre tremplin. Uploadez votre vidéo, visualisez votre mécanique, comprenez ce qui peut progresser. Une session à la fois.">
+        Nelly Korda, Lydia Ko, Jeeno Thitikul. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time.
       </p>
       <a href="#guide" class="cta-btn" data-en="Start your analysis" data-fr="Commencer l'analyse">Start your analysis</a>
     </div>
@@ -71,7 +71,7 @@
               <polygon points="47,29 41,32 47,35" fill="#E4704B"/>
             </svg>
           </div>
-          <h3 data-en="Angle 1 — Face-on" data-fr="Angle 1 — Face à face">Angle 1 — Face-on</h3>
+          <h3 data-en="Angle 1: Face-on" data-fr="Angle 1: Face a face">Angle 1: Face-on</h3>
           <p data-en="Camera directly in front of you, at hip height, perpendicular to your target line. Reveals weight shift, hip turn and posture." data-fr="Caméra directement devant vous, à hauteur des hanches, perpendiculaire à la ligne de cible. Révèle le transfert de poids, la rotation des hanches et la posture.">Camera directly in front of you, at hip height, perpendicular to your target line. Reveals weight shift, hip turn and posture.</p>
         </div>
 
@@ -94,7 +94,7 @@
               <polygon points="50,34 44,30 46,38" fill="#E4704B"/>
             </svg>
           </div>
-          <h3 data-en="Angle 2 — Down-the-line" data-fr="Angle 2 — Dans l'axe">Angle 2 — Down-the-line</h3>
+          <h3 data-en="Angle 2: Down-the-line" data-fr="Angle 2: Dans l'axe">Angle 2: Down-the-line</h3>
           <p data-en="Camera behind you, pointing toward your target, at hand height. Reveals swing plane, spine angle and club path." data-fr="Caméra derrière vous, pointée vers la cible, à hauteur des mains. Révèle le plan de swing, l'angle de la colonne et la trajectoire du club.">Camera behind you, pointing toward your target, at hand height. Reveals swing plane, spine angle and club path.</p>
         </div>
 
@@ -210,6 +210,12 @@
           <video id="video" playsinline muted></video>
           <canvas id="overlay"></canvas>
           <div class="phase-badge" id="phaseBadge"></div>
+        </div>
+
+        <div class="select-row">
+          <button id="selectPlayerBtn" class="ctrl-btn select-btn" data-en="Select player" data-fr="Selectionner la joueuse">Select player</button>
+          <button id="clearBoxBtn" class="ctrl-btn clear-btn" hidden data-en="Clear selection" data-fr="Effacer la selection">Clear selection</button>
+          <span class="select-hint" data-en="Optional. Use this only if others are in the frame." data-fr="Optionnel. A utiliser seulement si d'autres personnes sont dans le cadre.">Optional. Use this only if others are in the frame.</span>
         </div>
 
         <div class="player-controls">
