@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Little Golf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Language toggle -->
+  <div class="lang-bar">
+    <span class="brand-small">My Little Golf</span>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="fr">FR</button>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow" data-en="For women who swing" data-fr="Pour les femmes qui swinguent">For women who swing</p>
+      <h1 class="hero-title">
+        <span class="line1" data-en="Your swing." data-fr="Votre swing.">Your swing.</span>
+        <span class="line2 italic" data-en="Your story." data-fr="Votre histoire.">Your story.</span>
+      </h1>
+      <p class="hero-body" data-en="Nelly Korda, Lydia Ko, Jeeno. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time." data-fr="Nelly Korda, Lydia Ko, Jeeno. Chacune a commencé par un premier swing. Cette app est votre tremplin. Uploadez votre vidéo, visualisez votre mécanique, comprenez ce qui peut progresser. Une session à la fois.">
+        Nelly Korda, Lydia Ko, Jeeno. Every one of them started with a first swing. This app is your stepping stone. Upload your video, see your body mechanics, understand what to work on. One session at a time.
+      </p>
+      <a href="#guide" class="cta-btn" data-en="Start your analysis" data-fr="Commencer l'analyse">Start your analysis</a>
+    </div>
+
+    <!-- Original CC0-inspired SVG illustration: female golfer at follow-through -->
+    <div class="hero-deco" aria-hidden="true">
+      <svg viewBox="0 0 160 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Head -->
+        <circle cx="80" cy="38" r="18" stroke="#B4B56D" stroke-width="2.5" fill="none"/>
+        <!-- Ponytail -->
+        <path d="M88 24 Q102 14 108 28 Q104 36 96 32" stroke="#B4B56D" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Neck -->
+        <line x1="80" y1="56" x2="80" y2="70" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Shoulders -->
+        <line x1="52" y1="80" x2="112" y2="76" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Spine -->
+        <line x1="80" y1="70" x2="76" y2="152" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Left arm: raised in follow-through -->
+        <line x1="52" y1="80" x2="32" y2="52" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="32" y1="52" x2="20" y2="34" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Right arm: across body -->
+        <line x1="112" y1="76" x2="136" y2="88" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="136" y1="88" x2="148" y2="74" stroke="#B4B56D" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Club shaft extending up-left -->
+        <line x1="20" y1="34" x2="6" y2="10" stroke="#8DB2A2" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Club head -->
+        <rect x="2" y="6" width="8" height="6" rx="2" fill="#8DB2A2"/>
+        <!-- Hips -->
+        <line x1="64" y1="152" x2="96" y2="148" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Left leg: weight transferred, slight forward lean -->
+        <line x1="64" y1="152" x2="58" y2="230" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="58" y1="230" x2="52" y2="290" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Right leg: back toe -->
+        <line x1="96" y1="148" x2="102" y2="228" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="102" y1="228" x2="108" y2="288" stroke="#DEE2B0" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Left foot flat -->
+        <line x1="52" y1="290" x2="36" y2="294" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+        <!-- Right foot raised heel -->
+        <line x1="108" y1="288" x2="118" y2="280" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+        <!-- Swing arc (coral dashed) -->
+        <path d="M148 74 Q 110 20 20 34" stroke="#E4704B" stroke-width="1.5" stroke-dasharray="5 5" fill="none"/>
+        <!-- Ground line -->
+        <line x1="20" y1="296" x2="140" y2="296" stroke="#B4B56D" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      </svg>
+    </div>
+  </header>
+
+  <!-- Filming guide -->
+  <section class="guide" id="guide">
+    <div class="section-inner">
+      <h2 data-en="Before you film" data-fr="Avant de filmer">Before you film</h2>
+      <p class="section-sub" data-en="Good footage gives good feedback. The app needs to see you from head to feet, wrists included, throughout the entire swing." data-fr="Une bonne vidéo donne un bon retour. L'app doit vous voir de la tête aux pieds, poignets inclus, pendant tout le swing.">Good footage gives good feedback. The app needs to see you from head to feet, wrists included, throughout the entire swing.</p>
+
+      <div class="angles-grid">
+
+        <!-- Face-on -->
+        <div class="angle-card">
+          <div class="angle-icon">
+            <!-- CC0-inspired: simplified face-on view diagram -->
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="38" cy="12" r="7" stroke="#B4B56D" stroke-width="2" fill="none"/>
+              <line x1="38" y1="19" x2="38" y2="44" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+              <line x1="38" y1="28" x2="18" y2="36" stroke="#B4B56D" stroke-width="2" stroke-linecap="round"/>
+              <line x1="38" y1="28" x2="58" y2="36" stroke="#B4B56D" stroke-width="2" stroke-linecap="round"/>
+              <line x1="38" y1="44" x2="30" y2="64" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+              <line x1="38" y1="44" x2="46" y2="64" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+              <!-- Camera -->
+              <rect x="56" y="26" width="18" height="13" rx="2" stroke="#8DB2A2" stroke-width="1.5" fill="none"/>
+              <circle cx="65" cy="32" r="3.5" stroke="#8DB2A2" stroke-width="1.2" fill="none"/>
+              <!-- Arrow showing direction -->
+              <line x1="55" y1="32" x2="47" y2="32" stroke="#E4704B" stroke-width="1.5" stroke-linecap="round"/>
+              <polygon points="47,29 41,32 47,35" fill="#E4704B"/>
+            </svg>
+          </div>
+          <h3 data-en="Angle 1 — Face-on" data-fr="Angle 1 — Face à face">Angle 1 — Face-on</h3>
+          <p data-en="Camera directly in front of you, at hip height, perpendicular to your target line. Reveals weight shift, hip turn and posture." data-fr="Caméra directement devant vous, à hauteur des hanches, perpendiculaire à la ligne de cible. Révèle le transfert de poids, la rotation des hanches et la posture.">Camera directly in front of you, at hip height, perpendicular to your target line. Reveals weight shift, hip turn and posture.</p>
+        </div>
+
+        <!-- Down-the-line -->
+        <div class="angle-card">
+          <div class="angle-icon">
+            <!-- CC0-inspired: simplified DTL view diagram -->
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="38" cy="12" r="7" stroke="#B4B56D" stroke-width="2" fill="none"/>
+              <line x1="38" y1="19" x2="36" y2="44" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+              <line x1="36" y1="28" x2="16" y2="22" stroke="#B4B56D" stroke-width="2" stroke-linecap="round"/>
+              <line x1="16" y1="22" x2="6" y2="12" stroke="#8DB2A2" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="36" y1="28" x2="52" y2="34" stroke="#B4B56D" stroke-width="2" stroke-linecap="round"/>
+              <line x1="36" y1="44" x2="30" y2="64" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+              <line x1="36" y1="44" x2="44" y2="64" stroke="#DEE2B0" stroke-width="2" stroke-linecap="round"/>
+              <!-- Camera behind -->
+              <rect x="56" y="50" width="18" height="13" rx="2" stroke="#8DB2A2" stroke-width="1.5" fill="none"/>
+              <circle cx="65" cy="56" r="3.5" stroke="#8DB2A2" stroke-width="1.2" fill="none"/>
+              <line x1="56" y1="48" x2="48" y2="36" stroke="#E4704B" stroke-width="1.5" stroke-linecap="round"/>
+              <polygon points="50,34 44,30 46,38" fill="#E4704B"/>
+            </svg>
+          </div>
+          <h3 data-en="Angle 2 — Down-the-line" data-fr="Angle 2 — Dans l'axe">Angle 2 — Down-the-line</h3>
+          <p data-en="Camera behind you, pointing toward your target, at hand height. Reveals swing plane, spine angle and club path." data-fr="Caméra derrière vous, pointée vers la cible, à hauteur des mains. Révèle le plan de swing, l'angle de la colonne et la trajectoire du club.">Camera behind you, pointing toward your target, at hand height. Reveals swing plane, spine angle and club path.</p>
+        </div>
+
+      </div>
+
+      <!-- Rules: no emojis, plain text markers -->
+      <ul class="rules-list">
+        <li>
+          <span class="rule-marker">01</span>
+          <span data-en="Film in landscape mode. Portrait crops your feet out of frame." data-fr="Filmez en mode paysage. Le portrait coupe les pieds hors cadre.">Film in landscape mode. Portrait crops your feet out of frame.</span>
+        </li>
+        <li>
+          <span class="rule-marker">02</span>
+          <span data-en="Use slow-motion if your phone supports it, 120 fps or 240 fps. Impact lasts 0.2 seconds." data-fr="Utilisez le slow-motion si votre téléphone le permet, 120 ou 240 fps. L'impact dure 0,2 secondes.">Use slow-motion if your phone supports it, 120 fps or 240 fps. Impact lasts 0.2 seconds.</span>
+        </li>
+        <li>
+          <span class="rule-marker">03</span>
+          <span data-en="Distance: 3 to 4 metres from the golfer. Your full body, feet to wrists, must stay in frame throughout the swing." data-fr="Distance : 3 à 4 mètres de la golfeuse. Le corps entier, pieds jusqu'aux poignets, doit rester dans le cadre pendant tout le swing.">Distance: 3 to 4 metres from the golfer. Your full body, feet to wrists, must stay in frame throughout the swing.</span>
+        </li>
+        <li>
+          <span class="rule-marker">04</span>
+          <span data-en="Film outdoors or in good light. Shadows behind you cause tracking errors." data-fr="Filmez en extérieur ou dans une bonne lumière. Les ombres derrière vous causent des erreurs de tracking.">Film outdoors or in good light. Shadows behind you cause tracking errors.</span>
+        </li>
+        <li>
+          <span class="rule-marker">05</span>
+          <span data-en="Filming alone: set your phone on a tripod, a bag, or a water bottle. Use your phone timer delay." data-fr="Seule : posez votre téléphone sur un trépied, un sac, ou une bouteille. Utilisez le retardateur.">Filming alone: set your phone on a tripod, a bag, or a water bottle. Use your phone timer delay.</span>
+        </li>
+        <li>
+          <span class="rule-marker">06</span>
+          <span data-en="With a friend: ask them to keep the phone steady and film through to the finish. Do not stop at impact." data-fr="Avec une amie : demandez-lui de garder le téléphone stable et de filmer jusqu'au finish. Ne pas s'arrêter à l'impact.">With a friend: ask them to keep the phone steady and film through to the finish. Do not stop at impact.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Upload section -->
+  <section class="upload-section" id="upload">
+    <div class="section-inner">
+      <h2 data-en="Upload your swing" data-fr="Uploadez votre swing">Upload your swing</h2>
+
+      <div class="upload-tabs">
+        <button class="tab-btn active" data-angle="face" data-en="Face-on" data-fr="Face à face">Face-on</button>
+        <button class="tab-btn" data-angle="dtl" data-en="Down-the-line" data-fr="Dans l'axe">Down-the-line</button>
+      </div>
+
+      <div class="upload-panels">
+
+        <div class="upload-panel active" id="panel-face">
+          <div class="dropzone" id="drop-face">
+            <div class="drop-icon-svg" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="14" width="40" height="26" rx="4" stroke="#8DB2A2" stroke-width="2" fill="none"/>
+                <circle cx="24" cy="27" r="7" stroke="#8DB2A2" stroke-width="2" fill="none"/>
+                <rect x="16" y="8" width="16" height="8" rx="2" stroke="#8DB2A2" stroke-width="2" fill="none"/>
+                <circle cx="38" cy="20" r="2" fill="#B4B56D"/>
+              </svg>
+            </div>
+            <p class="drop-label" data-en="Drop your face-on video here" data-fr="Déposez la vidéo face à face ici">Drop your face-on video here</p>
+            <p class="drop-sub" data-en="or" data-fr="ou">or</p>
+            <label class="file-btn">
+              <span data-en="Choose file" data-fr="Choisir un fichier">Choose file</span>
+              <input type="file" id="file-face" accept="video/*" />
+            </label>
+          </div>
+        </div>
+
+        <div class="upload-panel" id="panel-dtl">
+          <div class="dropzone" id="drop-dtl">
+            <div class="drop-icon-svg" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="14" width="40" height="26" rx="4" stroke="#8DB2A2" stroke-width="2" fill="none"/>
+                <circle cx="24" cy="27" r="7" stroke="#8DB2A2" stroke-width="2" fill="none"/>
+                <rect x="16" y="8" width="16" height="8" rx="2" stroke="#8DB2A2" stroke-width="2" fill="none"/>
+                <circle cx="38" cy="20" r="2" fill="#B4B56D"/>
+              </svg>
+            </div>
+            <p class="drop-label" data-en="Drop your down-the-line video here" data-fr="Déposez la vidéo dans l'axe ici">Drop your down-the-line video here</p>
+            <p class="drop-sub" data-en="or" data-fr="ou">or</p>
+            <label class="file-btn">
+              <span data-en="Choose file" data-fr="Choisir un fichier">Choose file</span>
+              <input type="file" id="file-dtl" accept="video/*" />
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="model-row">
+        <label class="model-label" data-en="Tracking precision" data-fr="Précision du tracking">Tracking precision</label>
+        <select id="modelSelect">
+          <option value="lite"  data-en="Fast (lite)"             data-fr="Rapide (lite)">Fast (lite)</option>
+          <option value="full"  selected data-en="Balanced (full)" data-fr="Equilibré (full)">Balanced (full)</option>
+          <option value="heavy" data-en="Maximum (heavy)"         data-fr="Maximum (heavy)">Maximum (heavy)</option>
+        </select>
+        <label class="fps-label" data-en="Video FPS" data-fr="FPS vidéo">Video FPS</label>
+        <input type="number" id="fpsInput" value="30" min="1" max="240" />
+      </div>
+
+      <p id="status" class="status-msg"></p>
+    </div>
+  </section>
+
+  <!-- Analysis stage -->
+  <section class="analysis-section" id="stage" hidden>
+    <div class="section-inner wide">
+
+      <div class="player-wrap">
+        <div class="viewport">
+          <video id="video" playsinline muted></video>
+          <canvas id="overlay"></canvas>
+          <div class="phase-badge" id="phaseBadge"></div>
+        </div>
+
+        <div class="player-controls">
+          <button id="playBtn" class="ctrl-btn play-btn">Play</button>
+          <button id="stepBack" class="ctrl-btn">Back</button>
+          <button id="stepFwd" class="ctrl-btn">Fwd</button>
+
+          <div class="progress-wrap" id="progressWrap">
+            <div class="progress-bg">
+              <div class="progress-fill" id="progressFill"></div>
+              <div class="phase-markers" id="phaseMarkers"></div>
+            </div>
+          </div>
+
+          <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+
+          <select id="speedSelect" class="ctrl-select">
+            <option value="1">1x</option>
+            <option value="0.5">0.5x</option>
+            <option value="0.25" selected>0.25x</option>
+            <option value="0.1">0.1x</option>
+          </select>
+
+          <div class="volume-wrap">
+            <button id="muteBtn" class="ctrl-btn vol-btn">Vol</button>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" class="volume-slider" />
+          </div>
+        </div>
+      </div>
+
+      <div class="results-panel" id="resultsPanel">
+        <div class="results-header">
+          <h2 data-en="Swing analysis" data-fr="Analyse du swing">Swing analysis</h2>
+          <button id="analyseBtn" class="analyse-btn" data-en="Analyse my swing" data-fr="Analyser mon swing">Analyse my swing</button>
+        </div>
+
+        <div class="quality-row">
+          <span class="q-label" data-en="Wrist tracking at impact" data-fr="Tracking des poignets a l'impact">Wrist tracking at impact</span>
+          <span class="q-dot" id="qualityDot"></span>
+          <span class="q-val" id="qualityText">--</span>
+        </div>
+
+        <div class="metrics-grid" id="metricsGrid"></div>
+
+        <div class="coaching-wrap" id="coachingWrap" hidden>
+          <div class="coaching-header">
+            <svg class="coach-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="7" r="4" stroke="#B4B56D" stroke-width="1.8" fill="none"/>
+              <line x1="12" y1="11" x2="11" y2="18" stroke="#DEE2B0" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="11" y1="14" x2="7" y2="12" stroke="#B4B56D" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="11" y1="14" x2="15" y2="12" stroke="#B4B56D" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="11" y1="18" x2="8" y2="22" stroke="#DEE2B0" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="11" y1="18" x2="14" y2="22" stroke="#DEE2B0" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <h3 data-en="Your coaching notes" data-fr="Vos notes de coaching">Your coaching notes</h3>
+          </div>
+          <div class="coaching-body" id="coachingBody"></div>
+        </div>
+
+        <details class="joint-details">
+          <summary data-en="Joint confidence details" data-fr="Détails de confiance des articulations">Joint confidence details</summary>
+          <ul class="joints-list" id="jointReadout"></ul>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>
+      <span class="footer-brand">My Little Golf</span>
+      <span class="footer-sep">·</span>
+      <a href="https://femmypriscillya.com" class="footer-link" target="_blank" rel="noopener">femmypriscillya.com</a>
+    </p>
+    <p class="footer-cc">
+      <span data-en="Illustrations released under" data-fr="Illustrations sous licence">Illustrations released under</span>
+      <a href="https://creativecommons.org/publicdomain/zero/1.0/" class="footer-link" target="_blank" rel="noopener">Creative Commons CC0</a>
+    </p>
+    <p class="footer-privacy" data-en="Your videos are processed entirely on your device. Nothing is uploaded." data-fr="Vos vidéos sont traitées entièrement sur votre appareil. Rien n'est uploadé.">Your videos are processed entirely on your device. Nothing is uploaded.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
