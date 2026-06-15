@@ -40,6 +40,8 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
 const T = {
   loading:   { en: "Loading model...",            fr: "Chargement du modele..." },
   modelReady:{ en: "Model ready. Upload your swing video.", fr: "Modele pret. Uploadez votre video." },
+  loadingVideo: { en: "Preparing your analysis...", fr: "Preparation de l'analyse..." },
+  loadingModel: { en: "Loading tracking model...",  fr: "Chargement du modele de suivi..." },
   modelFail: { en: "Model failed to load. Serve this app over https://", fr: "Echec du chargement. Servez l'app via https://" },
   loaded:    { en: "Video loaded. Play or step through to analyse.", fr: "Video chargee. Lancez ou avancez image par image." },
   analysing: { en: "Analysing your swing...",      fr: "Analyse du swing en cours..." },
@@ -110,6 +112,8 @@ const metricsGrid  = document.getElementById("metricsGrid");
 const coachingWrap = document.getElementById("coachingWrap");
 const coachingBody = document.getElementById("coachingBody");
 const jointReadout = document.getElementById("jointReadout");
+const loadingOverlay = document.getElementById("loadingOverlay");
+const loadingMsg     = document.getElementById("loadingMsg");
 
 const drawingUtils = new DrawingUtils(ctx);
 
@@ -790,8 +794,10 @@ function currentPhaseLabel(time) {
 });
 
 async function loadVideo(file) {
-  try { await ensureModel(); } catch (e) { setStatus(tx("modelFail")); return; }
+  showLoading("loadingModel");
+  try { await ensureModel(); } catch (e) { hideLoading(); setStatus(tx("modelFail")); return; }
   resetAnalysis();
+  showLoading("loadingVideo");
   video.src = URL.createObjectURL(file);
   video.load();
 }
@@ -801,8 +807,9 @@ video.addEventListener("loadedmetadata", () => {
   canvas.height = video.videoHeight;
   stage.hidden  = false;
   stage.scrollIntoView({ behavior: "smooth", block: "start" });
+  hideLoading();
 
-  // Portrait nudge. The player box is optional, mentioned gently.
+  // Portrait nudge.
   if (video.videoHeight > video.videoWidth) {
     setStatus(tx("portrait") + " " + tx("loaded"));
   } else {
@@ -1086,6 +1093,17 @@ volumeSlider.addEventListener("input", () => {
    UTILS
    ============================================================ */
 function setStatus(msg) { statusEl.textContent = msg; }
+
+function showLoading(msgKey) {
+  if (!loadingOverlay) return;
+  const txt = tx(msgKey);
+  if (loadingMsg) loadingMsg.textContent = txt;
+  loadingOverlay.classList.add("active");
+}
+
+function hideLoading() {
+  if (loadingOverlay) loadingOverlay.classList.remove("active");
+}
 
 // Initial lang pass
 applyLang();
