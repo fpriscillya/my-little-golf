@@ -1,2 +1,2 @@
 # my-little-golf
-Golf swing analyser for women beginners
+Golf swing analyser for beginners
