@@ -8,12 +8,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#243D1D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="My Little Golf" />
+  <link rel="apple-touch-icon" href="assets/icon-512.png" />
 </head>
 <body>
 
   <!-- Top bar -->
   <div class="lang-bar">
-    <span class="brand-small">My Little Golf</span>
+    <a href="index.html" class="brand-small brand-link">My Little Golf</a>
     <nav class="top-nav">
       <a href="index.html" class="nav-link active" data-en="Swing analyser" data-fr="Analyse du swing">Swing analyser</a>
       <a href="green-card.html" class="nav-link" data-en="Green card" data-fr="Carte verte">Green card</a>
@@ -303,5 +309,10 @@
   </footer>
 
   <script type="module" src="assets/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>
