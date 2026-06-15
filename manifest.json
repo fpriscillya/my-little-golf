@@ -2,20 +2,21 @@
   "name": "My Little Golf",
   "short_name": "My Little Golf",
   "description": "Swing analysis and green card preparation for beginner golfers",
-  "start_url": "/index.html",
+  "start_url": "/my-little-golf/index.html",
+  "scope": "/my-little-golf/",
   "display": "standalone",
   "background_color": "#243D1D",
   "theme_color": "#243D1D",
   "orientation": "any",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "/my-little-golf/assets/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "/my-little-golf/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

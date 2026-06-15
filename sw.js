@@ -1,19 +1,22 @@
 /* ============================================================
    MY LITTLE GOLF: Service Worker
-   Cache-first for static assets, network-first for everything else.
-   Version bump CACHE_NAME to force update when files change.
+   Scoped to /my-little-golf/ for GitHub Pages subfolder hosting.
+   Bump CACHE_NAME to force update when files change.
    ============================================================ */
 
-const CACHE_NAME = "my-little-golf-v1";
+const CACHE_NAME = "my-little-golf-v2";
+const BASE = "/my-little-golf";
 
 const STATIC_ASSETS = [
-  "/index.html",
-  "/green-card.html",
-  "/manifest.json",
-  "/assets/style.css",
-  "/assets/app.js",
-  "/assets/green-card.js",
-  "/assets/fox.jpg",
+  `${BASE}/index.html`,
+  `${BASE}/green-card.html`,
+  `${BASE}/manifest.json`,
+  `${BASE}/assets/style.css`,
+  `${BASE}/assets/app.js`,
+  `${BASE}/assets/green-card.js`,
+  `${BASE}/assets/fox.jpg`,
+  `${BASE}/assets/icon-192.png`,
+  `${BASE}/assets/icon-512.png`,
 ];
 
 /* Install: cache all static assets */
@@ -38,15 +41,12 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-/* Fetch: cache-first for static, network-first for external */
+/* Fetch: cache-first for our static files, network for everything else */
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
+  const isOurAsset = STATIC_ASSETS.some(path => url.pathname === path);
 
-  // Only handle same-origin requests and known static paths.
-  // Let MediaPipe CDN and API calls go straight to the network.
-  const isStatic = STATIC_ASSETS.some(path => url.pathname === path);
-
-  if (isStatic) {
+  if (isOurAsset) {
     event.respondWith(
       caches.match(event.request).then(cached => {
         return cached || fetch(event.request).then(response => {
@@ -57,5 +57,5 @@ self.addEventListener("fetch", event => {
       })
     );
   }
-  // All other requests (MediaPipe models, fonts, CDN) go to network directly.
+  // MediaPipe models, Google Fonts, CDN requests go straight to network.
 });

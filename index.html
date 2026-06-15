@@ -311,7 +311,7 @@
   <script type="module" src="assets/app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.register("/my-little-golf/sw.js", { scope: "/my-little-golf/" }).catch(() => {});
     }
   </script>
 </body>
